@@ -1,0 +1,13 @@
+{
+    "name": "personal-trains",
+    "title": "Personal Trains",
+    "description": "Allows you to designate a personal train that can be called with the press of a button.",
+
+    "version": "1.0.0",
+    "author": "fynnbrem",
+    "factorio_version": "2.0",
+
+    "dependencies": [
+        "base"
+    ]
+}
