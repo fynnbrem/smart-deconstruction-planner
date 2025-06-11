@@ -2,12 +2,15 @@ from datetime import datetime
 import os
 import sys
 import time
+import urllib.parse
 import zipfile
 from pathlib import Path
 import platform
 import subprocess
 from typing import Literal
 import json
+
+import urllib
 
 
 # ─── EDIT THESE TWO PATHS BEFORE RUNNING ───────────────────────────────────────
@@ -17,6 +20,7 @@ DESTINATION_DIR: Path = Path(
 )  # ← change this to where you want the ZIP file placed
 # ─────────────────────────────────────────────────────────────────────────────
 print(f"Archiving: {SOURCE_FOLDER.absolute()}")
+
 
 def read_version(file_path: str | Path) -> str:
     """
@@ -47,7 +51,9 @@ def read_version(file_path: str | Path) -> str:
         raise KeyError("'version' key not found in JSON file")
 
     if not isinstance(version_value, str):
-        raise TypeError(f"Expected 'version' to be a str, got {type(version_value).__name__!r}")
+        raise TypeError(
+            f"Expected 'version' to be a str, got {type(version_value).__name__!r}"
+        )
 
     return version_value
 
@@ -110,13 +116,13 @@ def main() -> None:
         zip_folder(SOURCE_FOLDER, DESTINATION_DIR)
         print(f"Finished build at: {datetime.now().strftime("%H:%M:%S")}")
         time.sleep(0.5)
-        launch_steam_game("427520")
+        launch_steam_game("427520", r"C:\Users\fynnb\AppData\Roaming\Factorio\saves\lab.zip")
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
 
-def launch_steam_game(app_id: str) -> None:
+def launch_steam_game(app_id: str, savefile: Path | str | None) -> None:
     """
     Launch a Steam game given its AppID.
 
@@ -126,11 +132,19 @@ def launch_steam_game(app_id: str) -> None:
     Parameters:
         app_id (str): The numeric AppID of the Steam game to launch.
     """
+    if savefile is None:
+        args = ""
+    else:
+        args = f"--load-game \"{Path(savefile).absolute()}\""
+        args = urllib.parse.quote(args, safe="")
     # Build the Steam URI
-    steam_uri: str = f"steam://run/{app_id}"
+    if savefile is None:
+        steam_uri: str = f"steam://run/{app_id}"
+    else:
+        steam_uri: str = f"steam://run/{app_id}//{args}"
 
     system_name: Literal["Windows", "Darwin", "Linux", "Unknown"] = platform.system()  # type: ignore
-
+    print(f"Running game via: {steam_uri}")
     if system_name == "Windows":
         # On Windows, os.startfile will open the URI with the default handler (Steam).
         os.startfile(steam_uri)  # type: ignore

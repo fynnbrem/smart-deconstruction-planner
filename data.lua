@@ -19,8 +19,8 @@ data:extend {
     order = "personal-trains-call-shortcut",
     icon = graphics_dir .. "/call.png",
     small_icon = graphics_dir .. "/call.png",
-    localised_name = {"shortcut-name.personal-trains-call-shortcut"},
-    localised_description = {"shortcut-description.personal-trains-call-shortcut"},
+    localised_name = { "shortcut-name.personal-trains-call-shortcut" },
+    localised_description = { "shortcut-description.personal-trains-call-shortcut" },
   },
   {
     type = "custom-input",
@@ -40,17 +40,17 @@ data:extend {
     order = "personal-trains-schedule",
     icon = graphics_dir .. "/schedule.png",
     small_icon = graphics_dir .. "/schedule.png",
-    localised_name = {"shortcut-name.personal-trains-schedule-shortcut"},
-    localised_description = {"shortcut-description.personal-trains-schedule-shortcut"},
+    localised_name = { "shortcut-name.personal-trains-schedule-shortcut" },
+    localised_description = { "shortcut-description.personal-trains-schedule-shortcut" },
   },
   {
     type = "sprite",
     name = "personal-trains-call-icon",
     filename = graphics_dir .. "/call_colored.png",
-    size=64,
-    scale=2,
+    size = 64,
+    scale = 2,
     mipmap_count = 4,
     flags = { "gui-icon" }
   },
-
 }
+

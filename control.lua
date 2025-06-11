@@ -17,6 +17,22 @@ function contains(item, array)
   return false
 end
 
+local function distance(entity1, entity2)
+  local dx = entity1.position.x - entity2.position.x
+  local dy = entity1.position.y - entity2.position.y
+  return math.sqrt(dx * dx + dy * dy)
+end
+
+local function is_valid(entity)
+  return entity ~= nil and entity.valid
+end
+
+
+--[[Returns the value of the setting with the `key` for the player.]]
+local function get_player_setting(player, key)
+  return settings.get_player_settings(player)[key].value
+end
+
 --#region
 -- We want to ensure that any stale train indicators get removed.
 -- This happens especially when the user exits the game while a train indicator is active.
@@ -48,6 +64,31 @@ end
 )
 --#endregion
 
+--#region
+-- Register the handler to show the schedule when the player enters their personal train.
+script.on_event(defines.events.on_player_driving_changed_state,
+  function(event) handle_player_driving_changed_state(event) end)
+script.on_event(defines.events.on_train_changed_state,
+  function(event) default_train_changed_state_handler(event) end)
+script.on_event(defines.events.on_train_schedule_changed,
+  function(event) default_train_schedule_changed_handler(event) end)
+--#endregion
+
+function handle_player_driving_changed_state(event)
+  local player = game.get_player(event.player_index)
+  if not (player and player.valid) or not player.vehicle then return end
+  local vehicle = event.entity
+  -- Check if the player entered or left a vehicle.
+  if not (vehicle and vehicle.valid) then return end
+
+  if vehicle.type == "locomotive" then
+    local train = vehicle.train
+    if train_matches_player(train, player) then
+      player.opened = train.locomotives.front_movers[1]
+    end
+  end
+end
+
 function get_personal_train(player)
   for _, train in pairs(game.train_manager.get_trains { surface = player.surface, force = player.force }) do
     if train_matches_player(train, player) then
@@ -68,6 +109,71 @@ end
 
 --[[All trains which are actively being called. The key is the train ID and the value is a callback to be called when the call is finished or overwritten. Do not set this manually, instead use `register_active_call()`.]]
 active_calls = {}
+
+
+
+
+
+--[[If the schedule change event was invoked by a player, clear all temporary stops besides the first one.]]
+local function try_clear_temp_stops(event)
+  return
+  -- Validate data.
+  if event.player_index ~= nil then
+    local player = game.get_player(event.player_index)
+    if not (is_valid(player) and is_valid(event.train) and event.train.schedule) then return end
+    -- Check the settings.
+    if not get_player_setting(player, "personal-trains-clear-other-temp-stations") then return end
+
+    -- Modify the schedule.
+    local train = event.train
+    local current = train.schedule.current
+    for i = #train.schedule.records, 1, -1 do
+      if train.schedule.records[i].temporary and i ~= current then
+        train.schedule:remove_record(i)
+      end
+    end
+  end
+end
+
+-- [[Switches the driving mode of the train to manual or automatic and shows a floating text indicating the change.]]
+function switch_train_mode(train, to_manual, player)
+  train.manual_mode = to_manual
+  local text
+  if to_manual then
+    text = "Switched to manual"
+  else
+    text = "Switched to automatic"
+  end
+  player.create_local_flying_text { text = text, position = train.locomotives.front_movers[1].position }
+end
+
+--[[Handles the customized passenger behavior. This is:
+  - Eject passengers.
+  - Switch the train to manual.
+  ]]
+local function handle_passengers_on_arrival(train)
+  for _, passenger in pairs(train.passengers) do
+    if is_valid(passenger) then
+      if get_player_setting(passenger, "personal-trains-eject-on-arrival") then
+        passenger.set_driving(false)
+      end
+      if get_player_setting(passenger, "personal-trains-manual-on-arrival") and train_matches_player(train, passenger) then
+        switch_train_mode(train, true, passenger)
+      end
+    end
+  end
+end
+
+function default_train_changed_state_handler(event)
+  if not is_valid(event.train) then return end
+  if event.train.state == defines.train_state.wait_station then
+    handle_passengers_on_arrival(event.train)
+  end
+end
+
+function default_train_schedule_changed_handler(event)
+  try_clear_temp_stops(event)
+end
 
 function call_train(event)
   local player = game.players[event.player_index]
@@ -93,8 +199,8 @@ function call_train(event)
     record.temporary = true
     record.rail = selected_rail
     record.wait_conditions = {
-      { compare_type = "or",  type = "inactivity",       ticks = 60 * 15 },
-      { compare_type = "or",  type = "inactivity",       ticks = 60 * 5 },
+      { compare_type = "or",  type = "inactivity",       ticks = 60 * 60 },
+      { compare_type = "or",  type = "time",             ticks = 60 * 5 },
       { compare_type = "and", type = "passenger_present" },
     }
 
@@ -135,7 +241,8 @@ function call_train(event)
     end
     local renders = highlight_target_rail(selected_rail, player)
     register_active_call(called_train_id, renders)
-    script.on_event(defines.events.on_train_changed_state, get_train_arrived_handler(called_train_id, renders))
+    -- This handler replaces the default handler, so the train will not try to eject the player if he gets in before the train has fully stopped.
+    script.on_event(defines.events.on_train_changed_state, get_train_arrived_handler(player, called_train_id, renders))
     script.on_event(defines.events.on_train_schedule_changed, get_schedule_change_handler(called_train_id, renders))
   else
     show_no_train(player)
@@ -155,11 +262,11 @@ function register_active_call(train_id, renders)
   active_calls[train_id] = cleanup
 end
 
---[[Unregisters the activel call and cleans up any active call of the train.]]
+--[[Unregisters the active call and cleans up any active call of the train.]]
 function unregister_active_call(train_id)
-  local active_call = active_calls[train_id]
-  if active_call ~= nil then
-    active_call()
+  local active_call_callback = active_calls[train_id]
+  if active_call_callback ~= nil then
+    active_call_callback()
   end
 end
 
@@ -173,16 +280,28 @@ function show_no_rail(player)
   player.create_local_flying_text { text = "[virtual-signal=signal-no-entry][item=rail]", position = player.position }
 end
 
+--[[Unregisters the active call if there was any for the train.]]
 function get_schedule_change_handler(required_train)
   return function(event)
+    try_clear_temp_stops(event)
     if event.train.id ~= required_train then return end
     unregister_active_call(required_train)
   end
 end
 
-function get_train_arrived_handler(required_train)
+function get_train_arrived_handler(player, required_train)
   return function(event)
-    if event.train.id ~= required_train then return end
+    if not is_valid(event.train) or event.train.id ~= required_train then return end
+
+    if event.train.state == defines.train_state.wait_station then
+      if is_valid(player) then
+        local closest_carriage = player.surface.get_closest(player.character.position, event.train.carriages)
+        if closest_carriage and distance(player, closest_carriage) < get_player_setting(player, "personal-trains-pickup-on-arrival-range") then
+          closest_carriage.set_driver(player)
+        end
+      end
+    end
+
     if event.train.state == defines.train_state.wait_station or event.train.state == defines.train_state.manual_control then
       unregister_active_call(required_train)
     end
@@ -193,8 +312,12 @@ function cleanup_train_call(renders)
   for _, render_obj in pairs(renders) do
     render_obj.destroy()
   end
-  script.on_event(defines.events.on_train_changed_state, nil)
-  script.on_event(defines.events.on_train_schedule_changed, nil)
+  script.on_event(defines.events.on_train_schedule_changed,
+    function(event) default_train_schedule_changed_handler(event) end
+  )
+  script.on_event(defines.events.on_train_changed_state,
+    function(event) default_train_changed_state_handler(event) end
+  )
 end
 
 --[[ Draws some graphics to highlight the rail the requested train is headed towards.
@@ -283,7 +406,7 @@ local tintable_types = {
 }
 
 commands.add_command(
-  "player-colorize",
+  "player-tint",
   "Apply your player color to the entity you're hovering over",
   function(cmd)
     -- Get the player who ran the command
