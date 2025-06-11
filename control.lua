@@ -17,6 +17,13 @@ function contains(item, array)
   return false
 end
 
+local function reverse_inplace(t)
+  local n = #t
+  for i = 1, math.floor(n/2) do
+    t[i], t[n - i + 1] = t[n - i + 1], t[i]
+  end
+end
+
 local function distance(entity1, entity2)
   local dx = entity1.position.x - entity2.position.x
   local dy = entity1.position.y - entity2.position.y
@@ -116,7 +123,6 @@ active_calls = {}
 
 --[[If the schedule change event was invoked by a player, clear all temporary stops besides the first one.]]
 local function try_clear_temp_stops(event)
-  return
   -- Validate data.
   if event.player_index ~= nil then
     local player = game.get_player(event.player_index)
@@ -125,13 +131,27 @@ local function try_clear_temp_stops(event)
     if not get_player_setting(player, "personal-trains-clear-other-temp-stations") then return end
 
     -- Modify the schedule.
-    local train = event.train
-    local current = train.schedule.current
-    for i = #train.schedule.records, 1, -1 do
-      if train.schedule.records[i].temporary and i ~= current then
-        train.schedule:remove_record(i)
+    local schedule = event.train:get_schedule()
+    
+    local records = schedule.get_records()
+    local new_records = {}
+    local newest_temp_stop = nil
+
+    -- ↑ At the time of the event, the current index still points to the previous state.
+    schedule.clear_records()
+    for i = #records, 1, -1 do
+      if not records[i].temporary or records[i].created_by_interrupt then
+        table.insert(new_records, records[i])
+      elseif records[i].temporary and newest_temp_stop == nil then
+        table.insert(new_records, records[i])
+        newest_temp_stop = #new_records
       end
     end
+    -- Reverse the records back to their original order.
+    newest_temp_stop = #new_records - newest_temp_stop + 1
+    reverse_inplace(new_records)
+    schedule.set_records(new_records)
+    schedule.go_to_station(newest_temp_stop)
   end
 end
 
