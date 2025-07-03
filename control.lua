@@ -5,10 +5,6 @@ script.on_event(constants.mod_name .. "-hotkey", function(event) create_smart_de
 
 function create_smart_deconstruction_planner(event)
     local player = game.get_player(event.player_index)
-    player.create_local_flying_text {
-        text = "[font=default-bold][color=blue]Control-D[/color][/font] pressed",
-        create_at_cursor = true,
-    }
     if not (player and player.valid) then return end
 
     player.clear_cursor()
