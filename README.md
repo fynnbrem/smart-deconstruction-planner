@@ -1,1 +1,3 @@
-_stand on some rails and press the button, just remember to jump aside in time (calls trains with the same color as you)_
+A mod for the game "Factorio".
+
+It allows you to instantly create a deconstruction planner filtered to the hovered entity for fast, precise cleanup.

@@ -1,0 +1,14 @@
+{
+  "save-file": null,
+  "load-into-save": true,
+  "mod-folder": null,
+  "excluded-patterns": [
+    "GOALS.md",
+    "TODO.md",
+    "build.py",
+    "build-config.json",
+    ".idea/*",
+    ".git/*",
+    ".gitignore"
+  ]
+}

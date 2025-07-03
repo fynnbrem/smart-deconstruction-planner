@@ -1,3 +1,4 @@
+import fnmatch
 from datetime import datetime
 import os
 import sys
@@ -7,68 +8,61 @@ import zipfile
 from pathlib import Path
 import platform
 import subprocess
-from typing import Literal
+from typing import Literal, Iterable, Union
 import json
+
 
 import urllib
 
-
-# ─── EDIT THESE TWO PATHS BEFORE RUNNING ───────────────────────────────────────
-SOURCE_FOLDER: Path = Path(".")  # ← change this to the folder you want to zip
-DESTINATION_DIR: Path = Path(
-    r"C:\Users\fynnb\AppData\Roaming\Factorio\mods"
-)  # ← change this to where you want the ZIP file placed
-# ─────────────────────────────────────────────────────────────────────────────
-print(f"Archiving: {SOURCE_FOLDER.absolute()}")
+CONFIG = json.load(open("build-config.json"))
 
 
-def read_version(file_path: str | Path) -> str:
-    """
-    Read and return the "version" field from a JSON file.
+def read_value(dict_: dict, key: str, expected_type: type) -> any:
+    """Reads the value with the `key` from the `dict_` and asserts that it has the expected type."""
+    assert isinstance(
+        dict_[key], expected_type
+    ), f"Your config has an invalid value for `{key}`. Expected `{expected_type}` but got `{type(dict_[key]).__name__}`"
+    return dict_[key]
 
-    Args:
-        file_path: Path (or string) to the JSON file.
 
-    Returns:
-        The version string found under the "version" key.
+SAVE_FILE: str | None = read_value(CONFIG, "save-file", Union[str, None])
+"""The save file you want to load into. Can be omitted."""
+LOAD_INTO_SAVE: bool = read_value(CONFIG, "load-into-save", bool)
+"""Whether you want to load into the save file defined above."""
+MOD_FOLDER: str = read_value(CONFIG, "mod-folder", str)
+"""The Factorio mods folder. The mod will be placed there, ready to be used."""
+EXCLUDED_PATTERNS: list[str] = read_value(CONFIG, "excluded-patterns", list)
+"""Glob patterns for files and folders that should not be bundled."""
 
-    Raises:
-        FileNotFoundError: If the given file does not exist.
-        json.JSONDecodeError: If the file is not valid JSON.
-        KeyError: If the "version" key is missing in the parsed JSON.
-        TypeError: If the "version" value is not a string.
-    """
-    path = Path(file_path)
+
+def read_mod_info(info_file: str | Path) -> tuple[str, str]:
+    """Reads the name and version defined in the `.info.json` at the specified path."""
+    path = Path(info_file)
     if not path.is_file():
         raise FileNotFoundError(f"No such file: {path!s}")
 
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
 
-    try:
-        version_value = data["version"]
-    except KeyError:
-        raise KeyError("'version' key not found in JSON file")
-
-    if not isinstance(version_value, str):
-        raise TypeError(
-            f"Expected 'version' to be a str, got {type(version_value).__name__!r}"
-        )
-
-    return version_value
+    version = data["version"]
+    name = data["name"]
+    return name, version
 
 
-def zip_folder(source_folder: Path, destination_dir: Path) -> None:
+def bundle_mod(
+    source_folder: Path,
+    destination_dir: Path,
+    exclude_patterns: Iterable[str] = tuple(),
+) -> None:
     """
-    Create a ZIP archive of `source_folder`, excluding all `.py` files.
-    The archive will be named <foldername>.zip and placed inside `destination_dir`.
-    Inside the ZIP, the top‐level entry will be the folder itself (not just its contents).
+    Bundles the mod into a ZIP-archive ready to be used in Factorio.
 
     :param source_folder: Path to the folder you want to zip.
     :param destination_dir: Path to the folder where the ZIP will be created.
-    :raises FileNotFoundError: If source_folder does not exist or is not a directory.
+    :param exclude_patterns: Glob patterns for files and folders to be excluded.
     """
-    source_folder = source_folder.resolve()
+    print(f"Creating archive: {source_folder.absolute()}")
+
     if not source_folder.is_dir():
         raise FileNotFoundError(
             f"Source folder does not exist or is not a directory: {source_folder!s}"
@@ -79,90 +73,71 @@ def zip_folder(source_folder: Path, destination_dir: Path) -> None:
     if not destination_dir.exists():
         destination_dir.mkdir(parents=True, exist_ok=True)
 
-    folder_name: str = source_folder.name + "_" + str(read_version("info.json"))
+    mod_name, mod_version = read_mod_info("info.json")
+    folder_name: str = mod_name + "_" + mod_version
     zip_path: Path = destination_dir / f"{folder_name}.zip"
+    root_name = source_folder.name
 
-    # We want to store files under the archive so that the top‐level is `folder_name/…`.
-    parent_dir: Path = source_folder.parent
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for path in source_folder.rglob("*"):
+            # Only archive files
+            if not path.is_file():
+                continue
 
-    with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
-        for root, dirs, files in os.walk(source_folder):
-            root_path = Path(root)
+            # Compute the path relative to the root folder.
 
-            # Add empty directories explicitly (zipfile only stores files by default).
-            rel_dir: Path = root_path.relative_to(parent_dir)
-            if not files and not dirs:
-                zf_info = zipfile.ZipInfo(str(rel_dir) + "/")
-                zf.writestr(zf_info, b"")
+            rel_path = path.relative_to(source_folder)
 
-            for file_name in files:
-                if file_name.endswith(".py"):
-                    # Skip any .py file
-                    continue
+            # Skip anything matching an exclude pattern
+            if any(fnmatch.fnmatch(str(rel_path), pat) for pat in exclude_patterns):
+                continue
 
-                if file_name == "GOALS.md":
-                    continue
+            # Add the mod folder in front of it the zip contains the entire folder, not just the content,
+            # then convert to posix.
+            rel_str = (mod_name / rel_path).as_posix()
 
-                file_path: Path = root_path / file_name
-                # Compute arcname so that the top‐level is <folder_name>/...
-                arcname: Path = file_path.relative_to(parent_dir)
-                zf.write(file_path, arcname=arcname)
-
-    print(f"Created archive: {zip_path!s}")
+            # Write the file, preserving directory structure
+            zipf.write(path, arcname=rel_str)
+    print(f"Created archive: {zip_path.absolute()}")
 
 
 def main() -> None:
-    try:
-        zip_folder(SOURCE_FOLDER, DESTINATION_DIR)
-        print(f"Finished build at: {datetime.now().strftime("%H:%M:%S")}")
-        time.sleep(0.5)
-        launch_steam_game("427520", r"C:\Users\fynnb\AppData\Roaming\Factorio\saves\lab.zip")
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+    source_folder = Path(".")
+
+    bundle_mod(source_folder, Path(MOD_FOLDER), EXCLUDED_PATTERNS)
+    print(f"Finished build at: {datetime.now().strftime("%H:%M:%S")}")
+    # Wait a moment to everything to finish up before launching steam.
+    time.sleep(0.5)
+    launch_steam_game("427520", SAVE_FILE)
 
 
 def launch_steam_game(app_id: str, savefile: Path | str | None) -> None:
-    """
-    Launch a Steam game given its AppID.
+    """Launch a Steam game given its AppID.
 
-    This uses the Steam URI scheme (steam://run/<AppID>), which should work
-    on Windows (via os.startfile), macOS (via 'open'), and Linux (via 'xdg-open').
-
-    Parameters:
-        app_id (str): The numeric AppID of the Steam game to launch.
+    :param app_id: The numeric AppID of the Steam game to launch.
+    :param savefile: When defined, instantly loads into this savefile on game launch.
     """
     if savefile is None:
         args = ""
     else:
-        args = f"--load-game \"{Path(savefile).absolute()}\""
+        args = f'--load-game "{Path(savefile).absolute()}"'
         args = urllib.parse.quote(args, safe="")
     # Build the Steam URI
-    if savefile is None:
+    if savefile is None or not LOAD_INTO_SAVE:
         steam_uri: str = f"steam://run/{app_id}"
     else:
         steam_uri: str = f"steam://run/{app_id}//{args}"
 
-    system_name: Literal["Windows", "Darwin", "Linux", "Unknown"] = platform.system()  # type: ignore
+    system_name: Literal["Windows", "Darwin", "Linux"] = platform.system()  # type: ignore
     print(f"Running game via: {steam_uri}")
     if system_name == "Windows":
-        # On Windows, os.startfile will open the URI with the default handler (Steam).
-        os.startfile(steam_uri)  # type: ignore
-
+        os.startfile(steam_uri)
     elif system_name == "Darwin":
-        # On macOS, use `open`
         subprocess.run(["open", steam_uri], check=False)
-
     elif system_name == "Linux":
-        # On most Linux distros, use `xdg-open`
         subprocess.run(["xdg-open", steam_uri], check=False)
-
     else:
-        # Fallback: try xdg-open, which may work on some BSDs or other Unices
-        try:
-            subprocess.run(["xdg-open", steam_uri], check=False)
-        except FileNotFoundError:
-            print(f"Unsupported platform: {system_name!r}. Cannot launch Steam URI.")
+        raise ValueError("Cannot run steam as no known OS was detected.")
 
 
 if __name__ == "__main__":
