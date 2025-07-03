@@ -1,7 +1,7 @@
 {
-  "save-file": null,
+  "save-file": "C:\\your\\save\\file.zip",
   "load-into-save": true,
-  "mod-folder": null,
+  "mod-folder": "C:\\your\\factorio\\mods",
   "excluded-patterns": [
     "GOALS.md",
     "TODO.md",

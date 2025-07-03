@@ -14,6 +14,12 @@ import json
 
 import urllib
 
+CONFIG_FILE = Path("build-config.json")
+if not CONFIG_FILE.exists():
+    raise ValueError(
+        "You have not created a `build-config.json` yet. Copy the `build-config.json.example` to get started."
+    )
+
 CONFIG = json.load(open("build-config.json"))
 
 
