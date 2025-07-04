@@ -18,15 +18,19 @@ function create_smart_deconstruction_planner(event)
     -- If there is an entity selected, set this as the filter. Otherwise, just create an empty deconstruction planner.
     if selected and selected.valid then
         -- Apply quality too if desired.
-        local quality_mode = settings.get_player_settings(player)
-            ["smart-deconstruction-planner-quality-mode"].value
-        local quality
-        if quality_mode == "matching quality" then
-            quality = selected.quality
+        if selected.type == "tree" or selected.type == "simple-entity" then
+            stack.trees_and_rocks_only = true
         else
-            quality = nil
+            local quality_mode = settings.get_player_settings(player)
+                ["smart-deconstruction-planner-quality-mode"].value
+            local quality
+            if quality_mode == "matching quality" then
+                quality = selected.quality
+            else
+                quality = nil
+            end
+            stack.set_entity_filter(1, { name = selected.name, type = selected.type, quality = quality })
+            stack.entity_filter_mode = defines.deconstruction_item.entity_filter_mode.whitelist
         end
-        stack.set_entity_filter(1, { name = selected.name, type = selected.type, quality = quality })
-        stack.entity_filter_mode = defines.deconstruction_item.entity_filter_mode.whitelist
     end
 end
