@@ -20,19 +20,34 @@ function create_smart_deconstruction_planner(event)
     local selected = player.selected
     -- If there is an entity selected, set this as the filter. Otherwise, just create an empty deconstruction planner.
     if selected and selected.valid then
-        -- Apply quality too if desired.
-        if is_tree_or_rock(selected) then
+        local entity_name
+        local entity_type
+
+        -- Handle ghosts vs normal entities.
+        if lib.is_ghost(selected) and lib.get_player_setting(player, "ghost-select-underlying") then
+            -- Ghosts have their name and type stored in a dedicated field.
+            -- Quality is accessed the same for as for non-ghost.
+            entity_name = selected.ghost_name
+            entity_type = selected.ghost_type
+        else
+            entity_name = selected.name
+            entity_type = selected.type
+        end
+
+        if is_tree_or_rock(entity_name, entity_type) then
             stack.trees_and_rocks_only = true
         else
-            local quality_mode = settings.get_player_settings(player)
-                ["smart-deconstruction-planner-quality-mode"].value
+            -- Decide the quality for the filtered entity.
+            local quality_mode = lib.get_player_setting(player, "quality-mode")
             local quality
-            if quality_mode == "matching quality" then
+            if quality_mode == "matching-quality" and entity_type ~= "entity-ghost" then
+                -- If the entity is an entity ghost, we do not want quality even if the user has it configured.
+                -- This is because entity ghosts are too generic for quality to make sense.
                 quality = selected.quality
             else
                 quality = nil
             end
-            local entity_name = selected.name
+
             entity_name = normalize_rail(entity_name)
 
             local extended_names = extend_entity_to_group(entity_name)
@@ -70,8 +85,8 @@ function is_stomper_shell(entity_name)
 end
 
 --[[Check if the entity is a tree or rock. This excludes stomper shells, despite them having the same type as rocks.]]
-function is_tree_or_rock(entity)
-    return lib.table_contains({ "tree", "simple-entity" }, entity.type) and not is_stomper_shell(entity.name)
+function is_tree_or_rock(entity_name, entity_type)
+    return lib.table_contains({ "tree", "simple-entity" }, entity_type) and not is_stomper_shell(entity_name)
 end
 
 --[[Extend an entity to include similar entities.

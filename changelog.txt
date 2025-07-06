@@ -1,5 +1,12 @@
 ---------------------------------------------------------------------------------------------------
-Version: 1.0.1
+Version: 1.1.1
+Date: 06.07.2025
+  Minor Features:
+    - Selecting tentapod shells will now create a planner specific to tentapod shells (Instead of generic "trees and rocks").
+    - Selecting a ghost will now select the underlying entity instead of generic ghost.
+      This is turned off by default and must be enabled in the player settings first.
+---------------------------------------------------------------------------------------------------
+Version: 1.1.0
 Date: 05.07.2025
   Minor Features:
     - Creating a planner for any orientation of rail will now create a planner for all orientations of rail.
