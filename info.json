@@ -2,7 +2,7 @@
   "name": "smart-deconstruction-planner",
   "title": "Smart Deconstruction Planner",
   "description": "Instantly create a deconstruction planner filtered to the hovered entity for fast, precise cleanup.",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "author": "fynnbrem",
   "factorio_version": "2.0",
   "dependencies": [

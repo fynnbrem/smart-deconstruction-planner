@@ -1,9 +1,9 @@
-local constants = require("constants")
+local const = require("const")
 
 data:extend({
     {
         type = "custom-input",
-        name = constants.mod_name .. "-hotkey",
+        name = const.mod_name .. "-hotkey",
         key_sequence = "CONTROL + D",
     },
 

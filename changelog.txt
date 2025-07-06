@@ -1,0 +1,6 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.0.1
+Date: 05.07.2025
+  Minor Features:
+    - Creating a planner for any orientation of rail will now create a planner for all orientations of rail.
+      This will also include rail supports when using elevated rails.

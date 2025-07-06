@@ -1,9 +1,9 @@
-local constants = require("constants")
+local const = require("const")
 
 data:extend({
   {
     type = "string-setting",
-    name = constants.mod_name .. "-quality-mode",
+    name = const.mod_name .. "-quality-mode",
     setting_type = "runtime-per-user",
     default_value = "any-quality",
     allowed_values = {"any-quality", "matching-quality"},

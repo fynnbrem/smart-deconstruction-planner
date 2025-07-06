@@ -1,7 +1,10 @@
-local constants = require("constants")
+local const = require("const")
+local lib = require("lib")
 local planner_name = "deconstruction-planner"
 
-script.on_event(constants.mod_name .. "-hotkey", function(event) create_smart_deconstruction_planner(event) end)
+local stomper_shells = { "small-stomper-shell", "medium-stomper-shell", "big-stomper-shell" }
+
+script.on_event(const.mod_name .. "-hotkey", function(event) create_smart_deconstruction_planner(event) end)
 
 function create_smart_deconstruction_planner(event)
     local player = game.get_player(event.player_index)
@@ -18,7 +21,7 @@ function create_smart_deconstruction_planner(event)
     -- If there is an entity selected, set this as the filter. Otherwise, just create an empty deconstruction planner.
     if selected and selected.valid then
         -- Apply quality too if desired.
-        if selected.type == "tree" or selected.type == "simple-entity" then
+        if is_tree_or_rock(selected) then
             stack.trees_and_rocks_only = true
         else
             local quality_mode = settings.get_player_settings(player)
@@ -29,8 +32,60 @@ function create_smart_deconstruction_planner(event)
             else
                 quality = nil
             end
-            stack.set_entity_filter(1, { name = selected.name, type = selected.type, quality = quality })
+            local entity_name = selected.name
+            entity_name = normalize_rail(entity_name)
+
+            local extended_names = extend_entity_to_group(entity_name)
+
+            for i, name in ipairs(extended_names) do
+                stack.set_entity_filter(i, { name = name, quality = quality })
+            end
+
             stack.entity_filter_mode = defines.deconstruction_item.entity_filter_mode.whitelist
         end
+    end
+end
+
+--[[Normalize the rail to the straight rail prototype.
+This way, the created deconstruction planner will work on all rail orientations instead of only that specific orientation.]]
+function normalize_rail(entity_name)
+    new_entity_name = entity_name
+    -- Replace the "half-diagonal-rail", "curved-rail-a" or "curved-rail-b" infix with "straight-rail".
+    -- We keep the suffixes intact as to keep the sub-type applicable
+    -- (i.e. "elevated-half-diagonal-rail-minimal" becomes "elevated-straight-rail-minimal")
+    new_entity_name = new_entity_name:gsub("half%-diagonal%-rail", "straight-rail")
+    new_entity_name = new_entity_name:gsub("curved%-rail%-[ab]", "straight-rail")
+
+    if prototypes.entity[new_entity_name] then
+        -- As we just created a new name, we have to make sure it actually exists.
+        return new_entity_name
+    else
+        -- As we just created a new name, we have to make sure it actually exists.
+        return entity_name
+    end
+end
+
+function is_stomper_shell(entity_name)
+    return lib.table_contains(stomper_shells, entity_name)
+end
+
+--[[Check if the entity is a tree or rock. This excludes stomper shells, despite them having the same type as rocks.]]
+function is_tree_or_rock(entity)
+    return lib.table_contains({ "tree", "simple-entity" }, entity.type) and not is_stomper_shell(entity.name)
+end
+
+--[[Extend an entity to include similar entities.
+Currently this just extends elevated rails to also include their supports and ramps.]]
+function extend_entity_to_group(entity_name)
+    if entity_name:find("elevated%-straight%-rail%-minimal") then
+        -- Explicit support for "minimalist-rails" mod, as these define a custom ramp.
+        return { entity_name, "rail-ramp-minimal", "rail-support" }
+    elseif entity_name:find("elevated%-straight%-rail") then
+        -- Vanilla rails.
+        return { entity_name, "rail-ramp", "rail-support" }
+    elseif is_stomper_shell(entity_name) then
+        return stomper_shells
+    else
+        return { entity_name }
     end
 end
