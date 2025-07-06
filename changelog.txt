@@ -5,6 +5,8 @@ Date: 06.07.2025
     - Selecting tentapod shells will now create a planner specific to tentapod shells (Instead of generic "trees and rocks").
     - Selecting a ghost will now select the underlying entity instead of generic ghost.
       This is turned off by default and must be enabled in the player settings first.
+  Bugfixes:
+    - Quality filtering now works again.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 05.07.2025
