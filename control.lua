@@ -6,6 +6,23 @@ local stomper_shells = { "small-stomper-shell", "medium-stomper-shell", "big-sto
 
 script.on_event(const.mod_name .. "-hotkey", function(event) create_smart_deconstruction_planner(event) end)
 
+
+
+--[[Check if the entity has any open item requests.
+This will check both the direct requests for ghosts and the proxy requests for non-ghosts.]]
+local function has_item_request(entity)
+    local proxy = nil
+    if entity.type == "entity-ghost" then
+        proxy = entity
+    else
+        proxy = entity.item_request_proxy
+    end
+    if proxy == nil then return false end
+
+    return next(proxy.item_requests) ~= nil
+end
+
+
 function create_smart_deconstruction_planner(event)
     local player = game.get_player(event.player_index)
     if not (player and player.valid) then return end
@@ -22,9 +39,25 @@ function create_smart_deconstruction_planner(event)
     if selected and selected.valid then
         local entity_name
         local entity_type
+        local allow_quality = true
 
-        -- Handle ghosts vs normal entities.
-        if lib.is_ghost(selected) and lib.get_player_setting(player, "ghost-select-underlying") then
+
+        --[[
+        Handle the different types of name extraction for certain types. We operate in the following order:
+            1. Check if the entity has an item request, in which case we filter just for this type.
+                - We do this before ghosts for two reasons:
+                    1. It is likely that the user pastes a blueprint and then wants to remove the modules that blueprint inferred, rather than the ghosts.
+                    2. The smart planner can be used twice to remove the ghosts in sequence.
+            2. Check if the entity is a ghost, in which case we filter for the underlying type.
+            3. Handle normal entities.
+        ]]
+        if has_item_request(selected) and lib.get_player_setting(player, "select-item-requests") then
+            entity_name = "item-request-proxy"
+            entity_type = "item-request-proxy"
+
+            -- Disallow quality for item requests as they cannot have quality.
+            allow_quality = false
+        elseif lib.is_ghost(selected) and lib.get_player_setting(player, "ghost-select-underlying") then
             -- Ghosts have their name and type stored in a dedicated field.
             -- Quality is accessed the same for as for non-ghost.
             entity_name = selected.ghost_name
@@ -32,6 +65,9 @@ function create_smart_deconstruction_planner(event)
         else
             entity_name = selected.name
             entity_type = selected.type
+
+            -- Disallow quality if we create a generic ghost filter.
+            allow_quality = entity_type ~= "entity-ghost"
         end
 
         if is_tree_or_rock(entity_name, entity_type) then
@@ -40,7 +76,7 @@ function create_smart_deconstruction_planner(event)
             -- Decide the quality for the filtered entity.
             local quality_mode = lib.get_player_setting(player, "quality-mode")
             local quality
-            if quality_mode == "matching-quality" and entity_type ~= "entity-ghost" then
+            if quality_mode == "matching-quality" and allow_quality then
                 -- If the entity is an entity ghost, we do not want quality even if the user has it configured.
                 -- This is because entity ghosts are too generic for quality to make sense.
                 quality = selected.quality

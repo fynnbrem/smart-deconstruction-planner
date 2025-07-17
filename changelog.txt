@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.2
+Date: 17.07.2025
+  Minor Features:
+    - Selecting an entity that has an open item request (for example, an assembling machine requesting a module insertion) will now create a planner filtered to remove item requests.
+      This can be turned off in the player settings.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.1
 Date: 06.07.2025
   Minor Features:
