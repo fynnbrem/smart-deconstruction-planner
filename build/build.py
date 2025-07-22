@@ -11,16 +11,15 @@ import subprocess
 from typing import Literal, Iterable, Union
 import json
 
-
 import urllib
 
-CONFIG_FILE = Path("build-config.json")
+CONFIG_FILE = Path() / "build" / "build-config.json"
 if not CONFIG_FILE.exists():
     raise ValueError(
         "You have not created a `build-config.json` yet. Copy the `build-config.json.example` to get started."
     )
 
-CONFIG = json.load(open("build-config.json"))
+CONFIG = json.load(CONFIG_FILE.open())
 
 
 def read_value(dict_: dict, key: str, expected_type: type) -> any:
@@ -31,6 +30,8 @@ def read_value(dict_: dict, key: str, expected_type: type) -> any:
     return dict_[key]
 
 
+STEAM_EXE: str | None = read_value(CONFIG, "steam-exe", str)
+"""The path to the factorio executable."""
 SAVE_FILE: str | None = read_value(CONFIG, "save-file", Union[str, None])
 """The save file you want to load into. Can be omitted."""
 LOAD_INTO_SAVE: bool = read_value(CONFIG, "load-into-save", bool)
@@ -45,7 +46,7 @@ def read_mod_info(info_file: str | Path) -> tuple[str, str]:
     """Reads the name and version defined in the `.info.json` at the specified path."""
     path = Path(info_file)
     if not path.is_file():
-        raise FileNotFoundError(f"No such file: {path!s}")
+        raise FileNotFoundError(f"No such file: {path.absolute()}")
 
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
@@ -56,9 +57,9 @@ def read_mod_info(info_file: str | Path) -> tuple[str, str]:
 
 
 def bundle_mod(
-    source_folder: Path,
-    destination_dir: Path,
-    exclude_patterns: Iterable[str] = tuple(),
+        source_folder: Path,
+        destination_dir: Path,
+        exclude_patterns: Iterable[str] = tuple(),
 ) -> None:
     """
     Bundles the mod into a ZIP-archive ready to be used in Factorio.
@@ -67,7 +68,7 @@ def bundle_mod(
     :param destination_dir: Path to the folder where the ZIP will be created.
     :param exclude_patterns: Glob patterns for files and folders to be excluded.
     """
-    print(f"Creating archive: {source_folder.absolute()}")
+    print(f"Creating archive from: {source_folder.absolute()}")
 
     if not source_folder.is_dir():
         raise FileNotFoundError(
@@ -82,7 +83,6 @@ def bundle_mod(
     mod_name, mod_version = read_mod_info("info.json")
     folder_name: str = mod_name + "_" + mod_version
     zip_path: Path = destination_dir / f"{folder_name}.zip"
-    root_name = source_folder.name
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
         for path in source_folder.rglob("*"):
@@ -104,46 +104,34 @@ def bundle_mod(
 
             # Write the file, preserving directory structure
             zipf.write(path, arcname=rel_str)
-    print(f"Created archive: {zip_path.absolute()}")
+    print(f"Created archive at: {zip_path.absolute()}")
 
 
 def main() -> None:
-    source_folder = Path(".")
+    source_folder = Path()
 
     bundle_mod(source_folder, Path(MOD_FOLDER), EXCLUDED_PATTERNS)
     print(f"Finished build at: {datetime.now().strftime("%H:%M:%S")}")
     # Wait a moment to everything to finish up before launching steam.
     time.sleep(0.5)
-    launch_steam_game("427520", SAVE_FILE)
+    # launch_game(FACTORIO_EXE, SAVE_FILE)
+    launch_factorio(STEAM_EXE, SAVE_FILE)
 
 
-def launch_steam_game(app_id: str, savefile: Path | str | None) -> None:
-    """Launch a Steam game given its AppID.
 
-    :param app_id: The numeric AppID of the Steam game to launch.
-    :param savefile: When defined, instantly loads into this savefile on game launch.
+def launch_factorio(steam_exe: Path | str, save_file: Path | str | None) -> None:
+    """Launch factorio via the `steam_exe` and open it into the `save_file` (If defined).
     """
-    if savefile is None:
+    app_id = "427520"
+    if save_file is None:
         args = ""
     else:
-        args = f'--load-game "{Path(savefile).absolute()}"'
-        args = urllib.parse.quote(args, safe="")
-    # Build the Steam URI
-    if savefile is None or not LOAD_INTO_SAVE:
-        steam_uri: str = f"steam://run/{app_id}"
-    else:
-        steam_uri: str = f"steam://run/{app_id}//{args}"
+        args = f'--load-game "{Path(save_file).absolute()}"'
 
-    system_name: Literal["Windows", "Darwin", "Linux"] = platform.system()  # type: ignore
-    print(f"Running game via: {steam_uri}")
-    if system_name == "Windows":
-        os.startfile(steam_uri)
-    elif system_name == "Darwin":
-        subprocess.run(["open", steam_uri], check=False)
-    elif system_name == "Linux":
-        subprocess.run(["xdg-open", steam_uri], check=False)
-    else:
-        raise ValueError("Cannot run steam as no known OS was detected.")
+    # This is the only way to circumvent steams confirmation windows when trying to launch a game with arguments.
+    # Running it using `steam://run` or the game `.exe` would cause it to appear.
+    url = f'"{steam_exe}" -applaunch {app_id} {args}'.strip()
+    subprocess.run(url)
 
 
 if __name__ == "__main__":

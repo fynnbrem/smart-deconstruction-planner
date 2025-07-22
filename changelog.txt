@@ -1,6 +1,9 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.3
 Date: ????
+  Minor Features:
+    - You can now add multiple entities to the same planner by pressing the hotkey over and over.
+    - Added support for "Behemoth Enemies" mod.
   Bugfixes:
     - Fixed the name for the "Select item requests" setting.
 ---------------------------------------------------------------------------------------------------

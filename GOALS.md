@@ -1,19 +1,26 @@
 # Open
 
+- Add a shortcut to add more entities to the current planner.
+    - Something intuitive, like Alt + Click.
+    - Needs special handling for tree/rock deconstruction.
+- Add a shortcut mode
+    - Click the shortcut will first create an "empty" planner, which will then take on the type of the first clicked
+      entity.
 - Add smart groups.
-    - Selecting certain entities with a intuitive group will create a deconstruction planner for the entire group.
-    - On a different hotkey (Shift + D)
-    - Groups:
-        - Transport Belt: belts, underground belts, splitters
-        - Rail: rails, signals (Chain and normal), train stops
-        - Support: rail supports, rail ramps
-- Create "Item request slot" deconstructor when hovering an entity that has an item request.
-  - Configurable
+  - Selecting certain entities with an intuitive group will create a deconstruction planner for the entire group.
+  - On a different hotkey (Shift + D)
+  - Groups:
+  - Transport Belt: belts, underground belts, splitters
+  - Rail: rails, signals (Chain and normal), train stops
+  - Support: rail supports, rail ramps
 - Apply the same logic to upgrade planners.
-
+  - Make the planner a temporary item
+  - Instanty open the config dialog
 
 # Done
 
+- Create "Item request slot" deconstructor when hovering an entity that has an item request.
+    - Configurable
 - Add ghost handling.
     - Default: Create ghost deconstructor.
     - With setting: Create deconstructor for underlying entity.
@@ -23,7 +30,6 @@
 - Add rail support.
     - Selecting any rail should always create a "straight rail" deconstruction planner, which innately includes curved
       and diagonal rails.
-
 
 # Discarded
 

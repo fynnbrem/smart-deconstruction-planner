@@ -1,7 +1,7 @@
 local const = require("const")
-local lib = {}
+local this = {}
 
-function lib.table_contains(table, item)
+function this.table_contains(table, item)
     for _, v in ipairs(table) do
         if v == item then
             return true
@@ -10,14 +10,22 @@ function lib.table_contains(table, item)
     return false
 end
 
-function lib.is_ghost(entity)
+function this.is_ghost(entity)
     return entity.type == "entity-ghost"
 end
 
 --[[Returns the value of the setting with the `main_key` for the `player`.
 The key must only be the main part, the name of the mod will be prefixed automatically.]]
-function lib.get_player_setting(player, main_key)
+function this.get_player_setting(player, main_key)
     return settings.get_player_settings(player)[const.mod_name .. "-" .. main_key].value
 end
 
-return lib
+function this.is_valid(entity)
+    return entity ~= nil and entity.valid
+end
+
+function this.is_invalid(entity)
+    return entity == nil or not entity.valid
+end
+
+return this
