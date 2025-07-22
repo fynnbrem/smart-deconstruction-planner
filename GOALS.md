@@ -13,7 +13,7 @@
     - Support: rail supports, rail ramps
 - Apply the same logic to upgrade planners.
     - Make the planner a temporary item
-    - Instanty open the config dialog
+    - Instantly open the config dialog
 
 # Done
 
