@@ -7,15 +7,15 @@
     - Click the shortcut will first create an "empty" planner, which will then take on the type of the first clicked
       entity.
 - Add smart groups.
-  - Selecting certain entities with an intuitive group will create a deconstruction planner for the entire group.
-  - On a different hotkey (Shift + D)
-  - Groups:
-  - Transport Belt: belts, underground belts, splitters
-  - Rail: rails, signals (Chain and normal), train stops
-  - Support: rail supports, rail ramps
+    - Selecting certain entities with an intuitive group will create a deconstruction planner for the entire group.
+    - On a different hotkey (Shift + D)
+    - Groups:
+    - Transport Belt: belts, underground belts, splitters
+    - Rail: rails, signals (Chain and normal), train stops
+    - Support: rail supports, rail ramps
 - Apply the same logic to upgrade planners.
-  - Make the planner a temporary item
-  - Instanty open the config dialog
+    - Make the planner a temporary item
+    - Instanty open the config dialog
 
 # Done
 
@@ -30,6 +30,12 @@
 - Add rail support.
     - Selecting any rail should always create a "straight rail" deconstruction planner, which innately includes curved
       and diagonal rails.
+
+# Bugs
+
+# Fixed
+
+- Having a permanent "trees and rocks only" planner will allow you to insert entities into it.
 
 # Discarded
 

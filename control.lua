@@ -48,11 +48,16 @@ function create_smart_deconstruction_planner(event)
         -- If the player is holding a permanent planner, create a new one with the filters copied.
         -- This is so we can extend permanent planners but do not pollute the permananent planner itself.
         local preset_filters = player.cursor_stack.entity_filters
+        local preset_trees_and_rocks_only = player.cursor_stack.trees_and_rocks_only
         player.clear_cursor()
         player.cursor_stack.set_stack { name = deconstruction_planner, count = 1 }
         player.cursor_stack_temporary = true
 
+        -- Apply th e settings to the new filter.
+        -- We also include "Trees/rocks only" for completeness,
+        -- even though currently there is now way to extend such planner.
         player.cursor_stack.entity_filters = preset_filters
+        player.cursor_stack.trees_and_rocks_only = preset_trees_and_rocks_only
     end
     -- Do nothing if the player is already holding a temporary planner.
 
@@ -101,10 +106,7 @@ function create_smart_deconstruction_planner(event)
             -- Do not modify the planner if the player tries to mix an entity planner with a "Trees and rocks only" planner.
             player.print { "smart-deconstruction-planner.cannot-mix-entities-with-trees" }
         elseif is_tree_or_rock_ then
-            if #stack.entity_filters > 0 then
-            else
-                stack.trees_and_rocks_only = true
-            end
+            stack.trees_and_rocks_only = true
         else
             -- Set "Trees and rocks" to false in case the planner that is being extended had it turned on.
             stack.trees_and_rocks_only = false
