@@ -1,8 +1,6 @@
 # Open
 
-- Add a shortcut to add more entities to the current planner.
-    - Something intuitive, like Alt + Click.
-    - Needs special handling for tree/rock deconstruction.
+
 - Add a shortcut mode
     - Click the shortcut will first create an "empty" planner, which will then take on the type of the first clicked
       entity.
@@ -19,6 +17,9 @@
 
 # Done
 
+- Add a shortcut to add more entities to the current planner.
+    - Something intuitive, like Alt + Click.
+    - Needs special handling for tree/rock deconstruction.
 - Create "Item request slot" deconstructor when hovering an entity that has an item request.
     - Configurable
 - Add ghost handling.
