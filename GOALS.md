@@ -1,6 +1,8 @@
 # Open
 
-
+- Allow extending an existing planner with more entities.
+  - Pressing the hotkey again while holding a planner will add entities.
+  - Prevent duplicate additions.
 - Add a shortcut mode
     - Click the shortcut will first create an "empty" planner, which will then take on the type of the first clicked
       entity.
@@ -8,12 +10,15 @@
     - Selecting certain entities with an intuitive group will create a deconstruction planner for the entire group.
     - On a different hotkey (Shift + D)
     - Groups:
-    - Transport Belt: belts, underground belts, splitters
-    - Rail: rails, signals (Chain and normal), train stops
-    - Support: rail supports, rail ramps
+        - Transport Belt: belts, underground belts, splitters
+        - Rail: rails, signals (Chain and normal), train stops
+        - Support: rail supports, rail ramps
 - Apply the same logic to upgrade planners.
     - Make the planner a temporary item
     - Instantly open the config dialog
+- Add visual feedback to when an entity has been added (or removed) for the planner, when using extensible mode.
+- Add filtered copy planners (copy, cut, blueprint)
+    - Using the same logic, using the hotkey creates a planner with the hovered entity, dragging executes the planner.
 
 # Done
 
@@ -33,6 +38,8 @@
       and diagonal rails.
 
 # Bugs
+
+- Behemoth stomper shells try to get added even without the mod active.
 
 # Fixed
 

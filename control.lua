@@ -2,7 +2,12 @@ local const = require("const")
 local lib = require("lib")
 local deconstruction_planner = "deconstruction-planner"
 
-local stomper_shells = { "small-stomper-shell", "medium-stomper-shell", "big-stomper-shell", "behemoth-stomper-shell" }
+local stomper_shells = { "small-stomper-shell", "medium-stomper-shell", "big-stomper-shell" }
+
+-- "Behemoth Enemies" compatibility.
+if prototypes.entity["behemoth-stomper-shell"] then
+    table.insert(stomper_shells, "behemoth-stomper-shell")
+end
 
 script.on_event(const.mod_name .. "-hotkey", function(event) create_smart_deconstruction_planner(event) end)
 
@@ -108,8 +113,6 @@ function create_smart_deconstruction_planner(event)
         elseif is_tree_or_rock_ then
             stack.trees_and_rocks_only = true
         else
-            -- Set "Trees and rocks" to false in case the planner that is being extended had it turned on.
-            stack.trees_and_rocks_only = false
             -- Decide the quality for the filtered entity.
             local quality_mode = lib.get_player_setting(player, "quality-mode")
             local quality
