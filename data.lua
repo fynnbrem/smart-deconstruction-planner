@@ -9,7 +9,7 @@ local deconstruction_select = {
     started_sound = { filename = "__core__/sound/deconstruct-select-start.ogg" },
     ended_sound = { filename = "__core__/sound/deconstruct-select-end.ogg" }
 }
-
+-- TODO: Remove the hotkey for release, it is not implemented yet.
 data:extend {
     {
         type = "custom-input",

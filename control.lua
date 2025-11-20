@@ -1,7 +1,7 @@
 local const = require("const")
 local lib = require("lib")
+local table_to_string = require("table_to_string")
 local deconstruction_planner = "deconstruction-planner"
-
 local stomper_shells = { "small-stomper-shell", "medium-stomper-shell", "big-stomper-shell" }
 
 -- "Behemoth Enemies" compatibility.
@@ -132,9 +132,10 @@ function create_smart_deconstruction_planner(event)
             for i, name in ipairs(extended_names) do
                 local slot = #stack.entity_filters + 1
                 if slot <= stack.entity_filter_count then
-                    -- This can create duplicate entries, but we leave it to the user to just not to this.
-                    -- Also duplicate entries work just like non-duplicates.
-                    stack.set_entity_filter(slot, { name = name, quality = quality })
+                    if not is_entity_in_filter(stack, name, quality) then
+                        stack.set_entity_filter(slot, { name = name, quality = quality })
+                        player.print(table_to_string(stack.get_entity_filter(slot)))
+                    end
                 else
                     player.print { "smart-deconstruction-planner.deconstruction-planner-cannot-insert-more" }
                     break
@@ -144,6 +145,32 @@ function create_smart_deconstruction_planner(event)
             stack.entity_filter_mode = defines.deconstruction_item.entity_filter_mode.whitelist
         end
     end
+end
+
+---@param stack LuaItemStack
+---@param entity_name string
+---@param entity_quality LuaQualityPrototype
+--- Check if the entity defined by `entity_name [string]` and `entity_quality [LuaQualityPrototype]` already is in the filters of the `stack`.
+--- nil-quality in the filter will match with any `entity_quality`.
+function is_entity_in_filter(stack, entity_name, entity_quality)
+    for i = 1, stack.entity_filter_count do
+        entity = stack.get_entity_filter(i)
+        if entity ~= nil then
+            if entity_name == entity.name then
+                if entity.quality == nil then
+                    -- This can occur in two cases:
+                    -- 1. The filter is generic, in which case it will span any `entity_quality`.
+                    -- 2. The entity does not have a quality (e.g. ghosts or item requests), in which case name match is sufficient.
+                    return true
+                elseif entity_quality ~= nil and entity.quality == entity_quality.name then
+                    -- Due to the condition above, an nil-quality entity cannot match this entry.
+                    -- So we just need to check for defined qualities.
+                    return true
+                end
+            end
+        end
+    end
+    return false
 end
 
 --[[Normalize the rail to the straight rail prototype.
@@ -160,11 +187,12 @@ function normalize_rail(entity_name)
         -- As we just created a new name, we have to make sure it actually exists.
         return new_entity_name
     else
-        -- As we just created a new name, we have to make sure it actually exists.
+        -- If the new name is malformed, fall back to the input name.
         return entity_name
     end
 end
 
+--[[Check if the `entity_name` matches any type of stomper shell]]
 function is_stomper_shell(entity_name)
     return lib.table_contains(stomper_shells, entity_name)
 end
