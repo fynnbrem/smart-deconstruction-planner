@@ -134,7 +134,6 @@ function create_smart_deconstruction_planner(event)
                 if slot <= stack.entity_filter_count then
                     if not is_entity_in_filter(stack, name, quality) then
                         stack.set_entity_filter(slot, { name = name, quality = quality })
-                        player.print(table_to_string(stack.get_entity_filter(slot)))
                     end
                 else
                     player.print { "smart-deconstruction-planner.deconstruction-planner-cannot-insert-more" }

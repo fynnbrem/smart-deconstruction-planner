@@ -1,11 +1,9 @@
 # Open
 
-- Allow extending an existing planner with more entities.
-    - Pressing the hotkey again while holding a planner will add entities.
-    - Prevent duplicate additions.
 - Add a shortcut mode
     - Click the shortcut will first create an "empty" planner, which will then take on the type of the first clicked
       entity.
+    - Don't forget to remove the generated recycling recipe for the planner.
 - Add smart groups.
     - Selecting certain entities with an intuitive group will create a deconstruction planner for the entire group.
     - On a different hotkey (Shift + D)
@@ -20,8 +18,8 @@
 - Add filtered copy planners (copy, cut, blueprint)
     - Using the same logic, using the hotkey creates a planner with the hovered entity, dragging executes the planner.
 - Add visual feedback to extending planners.
-  - A floating symbol of the added entity would be nice.
-  - Consider that for groups, multiple entities might be added at once.
+    - A floating symbol of the added entity would be nice.
+    - Consider that for groups, multiple entities might be added at once.
 
 # Done
 
@@ -41,9 +39,10 @@
       and diagonal rails.
 
 # Bugs
+
 - The deconstructor for item requests does not remove item requests for ghosts.
-  - Probably can't do anything about it without rewriting the entire logic.
-  - Probably not important.
+    - Probably can't do anything about it without rewriting the entire logic.
+    - Probably not important.
 
 # Fixed
 
