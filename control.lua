@@ -44,11 +44,13 @@ function create_smart_deconstruction_planner(event)
     cursor_has_planner = is_stack_valid_deconstruction_planner(player.cursor_stack)
     cursor_is_temporary = player.cursor_stack_temporary
 
+    local is_fresh = false
     if not cursor_has_planner then
         -- If the player is holding to planner, create a new one.
         player.clear_cursor()
         player.cursor_stack.set_stack { name = deconstruction_planner, count = 1 }
         player.cursor_stack_temporary = true
+        is_fresh = true
     elseif not cursor_is_temporary then
         -- If the player is holding a permanent planner, create a new one with the filters copied.
         -- This is so we can extend permanent planners but do not pollute the permananent planner itself.
@@ -58,7 +60,7 @@ function create_smart_deconstruction_planner(event)
         player.cursor_stack.set_stack { name = deconstruction_planner, count = 1 }
         player.cursor_stack_temporary = true
 
-        -- Apply th e settings to the new filter.
+        -- Apply the settings to the new filter.
         -- We also include "Trees/rocks only" for completeness,
         -- even though currently there is now way to extend such planner.
         player.cursor_stack.entity_filters = preset_filters
@@ -129,20 +131,51 @@ function create_smart_deconstruction_planner(event)
             local extended_names = extend_entity_to_group(entity_name)
 
 
-            for i, name in ipairs(extended_names) do
-                local slot = #stack.entity_filters + 1
-                if slot <= stack.entity_filter_count then
-                    if not is_entity_in_filter(stack, name, quality) then
-                        stack.set_entity_filter(slot, { name = name, quality = quality })
-                    end
-                else
-                    player.print { "smart-deconstruction-planner.deconstruction-planner-cannot-insert-more" }
-                    break
-                end
+            for index, e_name in ipairs(extended_names) do
+                -- Try to insert every entity into the filter.
+                -- Only give feedback if:
+                --  - This is the first entity of the group to prevent spam.
+                --  - The planner is not being initialized from this entity
+                --      as the feedback is only for "extending" the planner.
+                try_insert_filter(
+                    stack,
+                    e_name,
+                    quality,
+                    player,
+                    index == 1 and not is_fresh)
             end
 
             stack.entity_filter_mode = defines.deconstruction_item.entity_filter_mode.whitelist
         end
+    end
+end
+
+---@param stack LuaItemStack
+---@param entity_name string
+---@param entity_quality LuaQualityPrototype
+---@param give_feedback boolean
+---Tries to insert the defined entity into the current stack as filter.
+---@returns `false` if the filter is full, `true` otherwise (even if the entity was not inserted due to being a duplicate)
+function try_insert_filter(stack, entity_name, entity_quality, player, give_feedback)
+    local slot = #stack.entity_filters + 1
+    if slot <= stack.entity_filter_count then
+        if not is_entity_in_filter(stack, entity_name, entity_quality) then
+            stack.set_entity_filter(slot, { name = entity_name, quality = entity_quality })
+
+            local text
+            if entity_quality then
+                text = "+[entity=" .. entity_name .. ",quality=" .. entity_quality.name .. "]"
+            else
+                text = "+[entity=" .. entity_name .. "]"
+            end
+            if give_feedback then
+                player.create_local_flying_text { text = text, create_at_cursor = true }
+            end
+        end
+        return true
+    else
+        player.print { "smart-deconstruction-planner.deconstruction-planner-cannot-insert-more" }
+        return false
     end
 end
 

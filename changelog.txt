@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.4
+Date: xxxxxxx
+  Minor Features:
+    - Extending a planner will now give visual feedback about the added entities.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.3
 Date: 20.11.2025
   Minor Features:

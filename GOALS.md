@@ -1,28 +1,28 @@
 # Open
 
 - Add a shortcut mode
-    - Click the shortcut will first create an "empty" planner, which will then take on the type of the first clicked
-      entity.
-    - Don't forget to remove the generated recycling recipe for the planner.
+  - Click the shortcut will first create an "empty" planner, which will then take on the type of the first clicked
+  entity.
+  - Don't forget to remove the generated recycling recipe for the planner.
 - Add smart groups.
-    - Selecting certain entities with an intuitive group will create a deconstruction planner for the entire group.
-    - On a different hotkey (Shift + D)
-    - Groups:
-        - Transport Belt: belts, underground belts, splitters
-        - Rail: rails, signals (Chain and normal), train stops
-        - Support: rail supports, rail ramps
+  - Selecting certain entities with an intuitive group will create a deconstruction planner for the entire group.
+  - On a different hotkey (Shift + D)
+  - Groups:
+    - Transport Belt: belts, underground belts, splitters
+    - Rail: rails, signals (Chain and normal), train stops
+    - Support: rail supports, rail ramps
 - Apply the same logic to upgrade planners.
-    - Make the planner a temporary item
-    - Instantly open the config dialog
-- Add visual feedback to when an entity has been added (or removed) for the planner, when using extensible mode.
+  - Make the planner a temporary item
+  - Instantly open the config dialog
 - Add filtered copy planners (copy, cut, blueprint)
-    - Using the same logic, using the hotkey creates a planner with the hovered entity, dragging executes the planner.
+      - Using the same logic, using the hotkey creates a planner with the hovered entity, dragging executes the planner.
 - Add visual feedback to extending planners.
-    - A floating symbol of the added entity would be nice.
-    - Consider that for groups, multiple entities might be added at once.
+      - A floating symbol of the added entity would be nice.
+      - Consider that for groups, multiple entities might be added at once.
 
 # Done
 
+- Add visual feedback to when an entity has been added (or removed) for the planner, when using extensible mode.
 - Add a shortcut to add more entities to the current planner.
     - Something intuitive, like Alt + Click.
     - Needs special handling for tree/rock deconstruction.
